@@ -9,6 +9,9 @@ rem 1.FROM_CommitID 				git 起始CommitID
 rem 2.TO_CommitID 					git 截止CommitID
 rem 3.Final_Target_File_Address 	檔案存放位置
 
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在包版 <--------------"
+timeout /t 5 /nobreak > nul
+
 echo "程式啟動 ---------->"
 
 echo "進度 =============== 0%%"
