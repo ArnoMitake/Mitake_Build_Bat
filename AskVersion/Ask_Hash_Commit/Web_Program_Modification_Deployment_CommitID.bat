@@ -9,9 +9,6 @@ rem 1.FROM_CommitID 				git 起始CommitID
 rem 2.TO_CommitID 					git 截止CommitID
 rem 3.Final_Target_File_Address 	檔案存放位置
 
-echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在包版 <--------------"
-timeout /t 5 /nobreak > nul
-
 echo "程式啟動 ---------->"
 
 echo "進度 =============== 0%%"
@@ -22,6 +19,13 @@ echo "設置編碼開始 UTF-8 ---------->"
 rem 設置編碼 UTF-8
 chcp 65001
 echo "設置編碼結束 UTF-8 <----------"
+
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在執行此程式 <--------------"
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在執行此程式 <--------------"
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在執行此程式 <--------------"
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在執行此程式 <--------------"
+echo "--------------> 執行前須注意:Web 版的 Java 需手動 build 過在執行此程式 <--------------"
+rem timeout /t 5 /nobreak > nul
 
 echo "啟用延遲擴張"
 rem 啟用延遲擴張
@@ -63,7 +67,19 @@ set Target_File=result.txt
 set Target_Repeat_File=repeat_result.txt
 
 rem 轉換 commit 檔案路徑位置到 target 對應的檔案路徑位置
-set target=WebContent\WEB-INF\classes
+echo 請輸入 build 完成後 classes 的位置 請選擇 &echo\1.build\classes &echo\2.WebContent\WEB-INF\classes &echo\以上都無，可將路徑位置直接貼上(預設為2)
+set /P target=
+if not defined target (
+    set target="2"
+)
+if "%target%"=="1" (
+    call set target=build\classes
+) else if "%target%"=="2" (
+    call set target=WebContent\WEB-INF\classes
+)
+echo target 路徑設置為:%target%
+
+rem todo 等有遇到 test 專案再調整
 set target_test=target\test-classes
 
 echo "config 設置結束 <-----"
@@ -103,7 +119,7 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 				rem echo !test!
 				echo !test!>>"%Target_File%"
 			) else (
-				set java=!file:src=%target%!
+				set java=!file:src=WebContent\WEB-INF\classes!
 				call set java=%%java:java=class%%
 				rem echo Java: !file!
 				rem echo class: !java!
@@ -114,7 +130,7 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 		    echo !file!| find "WebContent" >nul
 		    if errorlevel 1 (
 		        rem echo 無 WebContent 路徑: !file!
-                set xml=!file:src=%target%!
+                set xml=!file:src=WebContent\WEB-INF\classes!
                 rem echo 替換 WebContent 路徑: !xml!
                 echo !xml!>>"%Target_File%"
 		    ) else (
