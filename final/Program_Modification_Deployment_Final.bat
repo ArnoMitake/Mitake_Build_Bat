@@ -122,9 +122,9 @@ if "!GitQueryType!"=="1" (
 ) else if "!GitQueryType!"=="2" (
     rem "取得截止CommitID"
     echo "請輸入 git 截止 CommitID，如果未輸入，直接停止程式 (例如:8623a05f，git tools 不同顯示的會不一樣)"
-    set /P FROM_CommitID=
-    if not defined FROM_CommitID goto :end
-    echo "你輸入的是: !FROM_CommitID!"
+    set /P TO_CommitID=
+    if not defined TO_CommitID goto :end
+    echo "你輸入的是: !TO_CommitID!"
 )
 
 rem "存放檔案位置"
@@ -202,7 +202,7 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 		if "!file:~-5!"==".java" (
 			rem "在這裡執行相應的操作，處理 test 文件"
 			if "!file:\test\=!" neq "!file!" (
-				set test=!file:src\test\java=!target_test!!
+				set test=!file:src\test\java=%target_test%!
 				call set test=%%test:java=class%%
 				rem echo "!test!"
 				echo !test!>>"!Target_File!"
@@ -344,15 +344,15 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 		if "!file:~-5!"==".java" (
 			rem "在這裡執行相應的操作，處理 test 文件"
 			if "!file:\test\=!" neq "!file!" (
-				set test=!file:src\test\java=!target_test!!
+				set test=!file:src\test\java=%target_test%!
 				call set test=%%test:java=class%%
 				rem echo "!test!"
 				echo !test!>>"!Target_File!"
 			) else (
-				set java=!file:src\main\java=!target!!
+				set java=!file:src\main\java=%target%!
 				call set java=%%java:java=class%%
-				rem echo "Java: !file!"
-				rem echo "class: !java!"
+				echo "Java: !file!"
+				echo "class: !java!"
 				echo !java!>>"!Target_File!"
 			)
 		rem "在這裡執行相應的操作，處理資源文件"
@@ -364,7 +364,7 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 			) else (
 				echo xml: !file!
                 for /f "tokens=1,2,3 delims=\ " %%a in ("!file!") do (
-                    call set xml=!file:%%a\%%b\%%c=!target!!
+                    call set xml=!file:%%a\%%b\%%c=%target%!
                 )
 				echo "Nxml: !xml!"
 				echo !xml!>>"!Target_File!"
