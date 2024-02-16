@@ -14,11 +14,6 @@ rem 1.FROM_CommitID 				git 起始CommitID
 rem 2.TO_CommitID 					git 截止CommitID
 rem 3.Final_Target_File_Address 	檔案存放位置
 
-rem for /f "tokens=*" %%a in ('git log --before=2023-11-09T00:00:00Z --format^=%%H -n 1') do (
-rem     set "hash_commit=%%a"
-rem )
-rem echo 最新 commit 的 hash 為：%hash_commit%
-
 rem 取得起始日期
 echo 請輸入 git 起始日期 (例如:yyyy-mm-dd) 如果未輸入，直接停止程式
 set /P FROM_DATE=
@@ -232,6 +227,8 @@ rem 清理暫存檔案
 del !Commit_File!
 del !Target_File!
 del !Target_Repeat_File!
+
+endlocal
 
 echo "進度 =============== 100%%"
 :end

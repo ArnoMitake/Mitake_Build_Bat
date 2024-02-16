@@ -10,17 +10,37 @@ rem 1.有中文的部分需用 "" 防止出現 "?" is not recognized as an inter
 rem 2.路徑都要為 \ 否則系統不接受
 
 rem 需手動配置調整 :
-rem 1.FROM_DATE 					git 起始日期
-rem 2.TO_DATE 						git 至今日期
+rem 1.FROM_CommitID 				git 起始CommitID
+rem 2.TO_CommitID 					git 截止CommitID
 rem 3.Final_Target_File_Address 	檔案存放位置
 
-rem git 起始日期 格式: yyyy-MM-dd
-set FROM_DATE=2024-01-22
-rem git 至今日期 格式: yyyy-MM-dd
-set TO_DATE=2024-01-22
+echo 請輸入 git 起始 CommitID (例如:8623a05f) 如果未輸入，直接停止程式
+set /P FROM_CommitID=
+if not defined FROM_CommitID goto :end
+echo 你輸入的是: %FROM_CommitID%
+
+echo 請輸入 git 截止 CommitID (例如:454f509d) 如果未輸入，直接停止程式
+set /P TO_CommitID=
+if not defined TO_CommitID goto :end
+echo 你輸入的是: %TO_CommitID%
+
+rem 建立預設目錄格式:yyyy_MM_dd_HHmmss
+set year=%date:~3,4%
+set month=%date:~8,2%
+set day=%date:~11,2%
+set hour=%time:~0,2%
+set minute=%time:~3,2%
+set second=%time:~6,2%
+set yyyyMMddHHmmss=%year%_%month%_%day%_%hour%%minute%%second%
+
 rem 存放檔案位置
 rem 範例 : set Final_Target_File_Address="\\File-server\share\企業簡訊事業群\簡訊研發部\公用資料夾\【中心端調整】\20230526_測試用"
-set Final_Target_File_Address="2024_01_22_測試用"
+echo 請輸入存放檔案位置，如果未輸入，預設為專案根目錄
+set /P Final_Target_File_Address=
+if not defined Final_Target_File_Address (
+    set Final_Target_File_Address=%yyyyMMddHHmmss%
+)
+echo 檔名存放在:%Final_Target_File_Address%
 
 echo "執行 Maven Package -----> 開始"
 
@@ -36,13 +56,6 @@ echo "config 設置開始 ----->"
 
 rem 啟用延遲擴張 
 setlocal enabledelayedexpansion
-
-rem git 起始日期 格式: yyyy-MM-dd
-call set FROM_DATE="%FROM_DATE%T00:00:00Z"
-
-rem git 至今日期 格式: yyyy-MM-dd
-call set TO_DATE="%TO_DATE%T23:59:59Z"
-
 
 echo "進度 =============== 10%%"
 
@@ -65,12 +78,11 @@ if not exist commit_files.txt echo. > !Commit_File!
 echo "建立完成 !Commit_File! <-----"
 
 echo "開始取得 git commit 檔案路徑並存入 !Commit_File! ----->"
-git log --pretty=format: --name-only --after=%FROM_DATE% --before=%TO_DATE% | sort /unique > !Commit_File!
+git diff -r --no-commit-id --name-only --text  %FROM_CommitID% %TO_CommitID%  > !Commit_File!
+echo "git diff -r --no-commit-id --name-only --text"  %FROM_CommitID% %TO_CommitID%
 echo "結束取得 git commit 檔案路徑已存入 !Commit_File! <-----"
 
 echo "進度 =============== 40%%"
-
-echo "git log --pretty=format: --name-only --after=%FROM_DATE% --before=%TO_DATE%"
 
 echo "讀取 !Commit_File! 開始 ----->"
 echo "開始建立 !Target_File!  ----->"
@@ -79,11 +91,9 @@ for /f "tokens=*" %%a in (!Commit_File!) do (
 		set oldfile=%%a
 		set file=!oldfile:/=\!
 		set xml=""
-		
-	rem echo 路徑: %%~dpa
-	rem 有沒有 x 插在檔案類型
-	rem echo 檔案名稱: %%~nxa 
-		
+        rem echo 路徑: %%~dpa
+        rem 有沒有 x 插在檔案類型
+        rem echo 檔案名稱: %%~nxa
 		rem 在這裡執行相應的操作，處理 Java 文件
 		if "!file:~-5!"==".java" (
 			rem 在這裡執行相應的操作，處理 test 文件
@@ -137,34 +147,29 @@ rem 讀取 result.txt 檔並尋找缺少的 class 檔存入 repeat_result.txt
 for /f "tokens=*" %%a in (result.txt) do (
 	set "_path=%%a"
 	set "_is_class=!_path:~-6!"
-	rem "修正尾巴相同的檔都誤抓"
 	set "_file_name=%%~nxa"
-
 	for %%b in ("%%~dpna*") do (
 		set file_name=%%~nxb
 		if /i "!_is_class!" == ".class" (
 			set "_dir=%%~dpa"
 			set "_dir=!_dir:%cd%\=!"
-			rem echo !_dir!!file_name!
-
 			if "!_file_name!" == "!file_name!" (
-                rem echo "相同 : _file_name: !_file_name!，file_name: !file_name!"
-                rem echo "!_dir!!file_name!"
-                echo !_dir!!file_name!>>"!Target_Repeat_File!"
-            ) else (
-                rem echo "不相同 : _file_name: !_file_name!，file_name: !file_name!"
-                echo !file_name!| find "$" >nul
-                if errorlevel 1 (
-                    rem echo "沒有$字符號"
+                rem echo 相同 : _file_name: !_file_name!，file_name: !file_name!
+                rem echo !_dir!!file_name!
+                echo !_dir!!file_name!>>"%Target_Repeat_File%"
+			) else (
+			    rem echo 不相同 : _file_name: !_file_name!，file_name: !file_name!
+			    echo !file_name!| find "$" >nul
+			    if errorlevel 1 (
+                    rem echo 沒有$字符號
                 ) else (
-                    rem echo "有$字符號"
-                    rem echo "!_dir!!file_name!"
-                    echo !_dir!!file_name!>>"!Target_Repeat_File!"
+                    rem echo 有$字符號
+                    rem echo !_dir!!file_name!
+                    echo !_dir!!file_name!>>"%Target_Repeat_File%"
                 )
-            )
-        )
-    )
-	
+			)
+		)
+	)
 	if /i not "!_is_class!" == ".class" (
 		rem echo 這是外層: %%a
 		echo %%a>>"%Target_Repeat_File%"
@@ -179,16 +184,13 @@ echo "建立資料夾開始 -----> !Final_Target_File_Address!"
 if not exist "%Final_Target_File_Address%" mkdir "%Final_Target_File_Address%"
 echo "建立資料夾結束 <----- !Final_Target_File_Address!"
 
-
 echo "讀取 !Target_Repeat_File! 開始 ----->"
 echo "複製檔案中..."
 rem 讀取 repeat_result.txt 檔並複製檔案至指定位置 Final_Target_File_Address
 for /f "tokens=*" %%a in (repeat_result.txt) do (
-	
 	mkdir "%Final_Target_File_Address%\%%a"
 	rmdir /s /q "%Final_Target_File_Address%\%%a"
 	copy  "%%a" "%Final_Target_File_Address%\%%a" > nul
-
 )
 echo "複製結束."
 echo "讀取 !Target_Repeat_File! 結束 <-----"
@@ -202,7 +204,7 @@ del !Target_Repeat_File!
 endlocal
 
 echo "進度 =============== 100%%"
-
+:end
 echo "程式結束 <----------"
 rem 關閉腳本 : rem pause 
 rem 暂停腳本 : pause
