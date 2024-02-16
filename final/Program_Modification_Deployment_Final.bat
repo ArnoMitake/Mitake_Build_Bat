@@ -62,20 +62,21 @@ if "!GitQueryType!"=="1" (
 rem "起始git查詢參數設定"
 if "!GitQueryType!"=="1" (
     rem "取得起始日期"
-    echo "請輸入 git 起始日期，如果未輸入，直接停止程式  (例如:yyyy-MM-dd or yyyy-MM-ddTHH:mm:ssZ)"
+    echo "請輸入 git 起始日期，如果未輸入，直接停止程式  (例如:yyyyMMdd or yyyyMMddTHHmmssZ)"
     set /P FROM_DATE=
     if not defined FROM_DATE goto :end
     rem "檢查日期格式"
-     echo !FROM_DATE!| find ":" >nul
+
+     echo !FROM_DATE!| find "T" >nul
         if errorlevel 1 (
-            rem echo "yyyy-MM-dd:!FROM_DATE!"
-            set FROM_DATE=!FROM_DATE!T00:00:00Z
+            rem echo "yyyyMMdd:!FROM_DATE!"
+            set FROM_DATE=!FROM_DATE!T000000Z
         ) else (
-            rem echo "yyyy-MM-ddTHH:mm:ssZ:!FROM_DATE!"
+            rem echo "yyyyMMddTHHmmssZ:!FROM_DATE!"
         )
     echo "起始日期為: !FROM_DATE!"
     rem "用起始日期取得 Hash Commit"
-    for /f "tokens=*" %%a in ('git log --before=!FROM_DATE! --format^=%%H -n 1') do (
+    for /f "tokens=*" %%a in ('git log --before="!FROM_DATE!" --format^=%%H -n 1') do (
         set FROM_CommitID=%%a
     )
     echo "commit 的 hash 為：!FROM_CommitID!"
