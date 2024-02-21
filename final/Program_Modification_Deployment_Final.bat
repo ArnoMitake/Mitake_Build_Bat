@@ -101,7 +101,7 @@ set yyyyMMddHHmmss=%year%_%month%_%day%_%hour%%minute%%second%
 rem "截止git查詢參數設定"
 if "!GitQueryType!"=="1" (
     rem "取得截止日期"
-    echo "請輸入 git 截止日期，如果未輸入，預設為最新日期 (例如:yyyy-MM-dd or yyyy-MM-ddTHH:mm:ssZ)"
+    echo "請輸入 git 截止日期，如果未輸入，預設為最新日期 (例如:yyyyMMdd or yyyyMMddTHHmmssZ)"
     set /P TO_DATE=
     if not defined TO_DATE (
         set TO_DATE=%year%-%month%-%day%
@@ -109,10 +109,10 @@ if "!GitQueryType!"=="1" (
     rem "檢查日期格式"
     echo !TO_DATE!| find ":" >nul
         if errorlevel 1 (
-            rem echo "yyyy-MM-dd:!TO_DATE!"
-            set TO_DATE=!TO_DATE!T00:00:00Z
+            rem echo "yyyyMMdd:!TO_DATE!"
+            set TO_DATE=!TO_DATE!T24:00:00Z
         ) else (
-            rem echo "yyyy-MM-ddTHH:mm:ssZ:!TO_DATE!"
+            rem echo "yyyyMMddTHHmmssZ:!TO_DATE!"
         )
     echo "截止日期為: !TO_DATE!"
     rem "用截止日期取得 Hash Commit"
@@ -320,10 +320,7 @@ echo "進度 =============== 20%%"
 echo "開始建立 !Commit_File! ----->"
 rem "取得符合日期範圍的 git commit 的檔案路徑存放至 Commit_File"
 echo "git diff -r --no-commit-id --name-only --text"  !FROM_CommitID! !TO_CommitID!
-if !FROM_CommitID!==!TO_CommitID! (
-    echo ">>>>>>>>>警告提示:起始 CommitID 與 截止 CommitId 相同，請將起始 CommitID 提前至前一個 CommitID"
-    goto :end
-)
+
 if not exist commit_files.txt echo. > !Commit_File!
 echo "建立完成 !Commit_File! <-----"
 echo "開始取得 git commit 檔案路徑並存入 !Commit_File! ----->"
