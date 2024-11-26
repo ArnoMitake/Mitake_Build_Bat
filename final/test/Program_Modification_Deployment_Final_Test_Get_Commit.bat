@@ -1,9 +1,7 @@
 @echo off
 rem "此版本為最終版本(未來可能只調整此版本)"
 rem "目標:"
-rem "1.調整 Java 專案類型 (2.Java)"
-rem "2.區分出要抓 (1. .Java 2. .class)"
-rem "3.增加取 .Java 檔功能"
+rem "1.新增 Commit 專案類型 (3.Commit)"
 
 rem "注意 :"
 rem "1.有中文的部分需用 "" 防止出現 "?" is not recognized as an internal or external command, operable program or batch file."
@@ -30,8 +28,8 @@ echo "啟用延遲擴張"
 rem "啟用延遲擴張"
 setlocal enabledelayedexpansion
 
-rem "專案類型:ProjectType 1.Web 2.Java"
-echo "請選擇專案類型，如果未輸入，直接停止程式" &echo\"1.Web"&echo\"2.Java"
+@REM "專案類型:ProjectType 1.Web 2.Java 3.Commit(直接抓取 commit 路徑檔案) #########################################################"
+echo "請選擇專案類型，如果未輸入，直接停止程式" &echo\"1.Web"&echo\"2.Java"&echo\"3.Commit(直接抓取 commit 路徑檔案)"
 set /P ProjectType=
 if "!ProjectType!"=="1" (
     echo "專案類型為: Web"
@@ -45,10 +43,12 @@ if "!ProjectType!"=="1" (
     echo "專案類型為: Java"
     echo "執行 Maven Package -----> 開始"
     call mvn package
-    echo "執行 Maven Package -----> 結束"    
+    echo "執行 Maven Package -----> 結束"
+) else if "!ProjectType!"=="3" (
+    echo "專案類型為: Commit(直接抓取 commit 路徑檔案)"
 ) else if not defined ProjectType goto :end
 
-rem "git查詢方式:GitQueryType 1.日期查詢 2.CommitID查詢"
+@REM "git查詢方式:GitQueryType 1.日期查詢 2.CommitID查詢 ###########################################################"
 echo "請選擇 git 查詢方式，如果未輸入，直接停止程式" &echo\"1.日期查詢"&echo\"2.CommitID查詢"
 set /P GitQueryType=
 if "!GitQueryType!"=="1" (
@@ -148,16 +148,19 @@ set Target_Repeat_File=repeat_result.txt
 
 echo "進度 =============== 10%%"
 
-rem "區分專案類型 ProjectType 1.Web 2.Java (整段處裡邏輯分開寫)"
+@REM "區分專案類型 ProjectType 1.Web 2.Java 3.Commit (整段處裡邏輯分開寫) ###########################################################"
 rem "考量因素:"
 rem "1.debug 較方便"
 rem "2.專案構造不同，未來很難改動"
 if "!ProjectType!"=="1" goto :Web
 if "!ProjectType!"=="2" goto :Java
+if "!ProjectType!"=="3" goto :Commit
 
 echo "ProjectType 不正確:!ProjectType!"
 goto :end
 
+
+@REM "WEB 功能 ######################################################################################################################"
 :Web
 rem "轉換 commit 檔案路徑位置到 target 對應的檔案路徑位置"
 echo "請輸入 build 完成後 classes 的位置 請選擇" &echo\"1.build\classes" &echo\"2.WebContent\WEB-INF\classes" &echo\"以上都無，可將路徑位置直接貼上(預設為2)"
@@ -313,6 +316,7 @@ del !Target_Repeat_File!
 echo "進度 =============== 100%%"
 goto :end
 
+@REM "Java 功能 ######################################################################################################################"
 :Java
 rem "轉換 commit 檔案路徑位置到 target 對應的檔案路徑位置"
 set target=target\classes
@@ -463,10 +467,59 @@ del !Commit_File!
 del !Target_File!
 del !Target_Repeat_File!
 
-endlocal
+echo "進度 =============== 100%%"
+goto :end
+
+@REM "Commit 功能 ######################################################################################################################"
+:Commit
+echo "進度 =============== 20%%"
+
+echo "開始建立 !Commit_File! ----->"
+rem "取得符合日期範圍的 git commit 的檔案路徑存放至 Commit_File"
+echo "git diff -r --no-commit-id --name-only --text"  !FROM_CommitID! !TO_CommitID!
+if !FROM_CommitID!==!TO_CommitID! (
+    echo ">>>>>>>>>警告提示:起始 CommitID 與 截止 CommitId 相同，請將起始 CommitID 提前至前一個 CommitID"
+    goto :end
+)
+if not exist commit_files.txt echo. > !Commit_File!
+echo "建立完成 !Commit_File! <-----"
+echo "開始取得 git commit 檔案路徑並存入 !Commit_File! ----->"
+git diff -r --no-commit-id --name-only --text  !FROM_CommitID! !TO_CommitID!  > !Commit_File!
+echo "結束取得 git commit 檔案路徑已存入 !Commit_File! <-----"
+
+echo "進度 =============== 40%%"
+
+echo "建立資料夾開始 -----> !Final_Target_File_Address!"
+if not exist "!Final_Target_File_Address!" mkdir "!Final_Target_File_Address!"
+echo "建立資料夾結束 <----- !Final_Target_File_Address!"
+
+echo "進度 =============== 60%%"
+
+echo "讀取 !Commit_File! 開始 ----->"
+echo "複製檔案中..."
+rem "讀取 commit_files.txt 檔並複製檔案至指定位置 Final_Target_File_Address"
+for /f "tokens=*" %%a in (commit_files.txt) do (
+    set oldfile=%%a
+    set file=!oldfile:/=\!
+    
+    rem echo "!Final_Target_File_Address!\!file!"    
+	mkdir "!Final_Target_File_Address!\!file!"
+	rmdir /s /q "!Final_Target_File_Address!\!file!"
+	copy  "!file!" "!Final_Target_File_Address!\!file!" > nul
+
+)
+echo "複製結束."
+echo "讀取 !Commit_File! 結束 <-----"
+echo "進度 =============== 80%%"
+
+echo "刪除檔案 ----->"  !Commit_File!
+rem "清理暫存檔案"
+del !Commit_File!
 
 echo "進度 =============== 100%%"
+goto :end
 
+@REM "end ######################################################################################################################"
 :end
 echo "關閉延遲擴張"
 rem "關閉延遲擴張"
